@@ -18,21 +18,27 @@ if [ ! -d /data/session ]; then
   mkdir -p /data/session;
 fi
 
+# These dirs always are reset
+permDirs="/nextcloud /config /apps2 /var/log /php /nginx /tmp /etc/s6.d"
 
 if [ "$PERMISSION_RESET" = "1" ] ; then
-  echo "Updating permissions..."
-  for dir in /nextcloud /data /config /apps2 /var/log /php /nginx /tmp /etc/s6.d; do
-    if $(find $dir ! -user $UID -o ! -group $GID|egrep '.' -q); then
-      echo "Updating permissions in $dir..."
-      chown -R $UID:$GID $dir
-    else
-      echo "Permissions in $dir are correct."
-    fi
-  done
-  echo "Done updating permissions."
+  permDirs="$permDirs /data"
 else
-  echo "Not updating permissions since \$PERMISSION_RESET was not '1'";
+  echo "Not updating permissions on /data since \$PERMISSION_RESET was not '1'";
 fi
+
+echo "Updating permissions..."
+for dir in $permDirs; do
+  if $(find $dir ! -user $UID -o ! -group $GID|egrep '.' -q); then
+    echo "Updating permissions in $dir..."
+    chown -R $UID:$GID $dir
+  else
+    echo "Permissions in $dir are correct."
+  fi
+done
+echo "Done updating permissions."
+
+
 if [ ! -f /config/config.php ]; then
     # New installation, run the setup
     /usr/local/bin/setup.sh
